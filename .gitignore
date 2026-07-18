@@ -1,0 +1,20 @@
+node_modules/
+.next/
+.turbo/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.DS_Store
+*.log
+coverage/
+
+# environment secrets
+.env
+.env.example
+
+# spec docs (kept local)
+02-technical-implementation.md
+04-claude-design-prompt-games.md
+05-prd-playable-games.md

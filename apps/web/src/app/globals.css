@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+/* ── CortexWatt design tokens — design doc 04 ─────────────────────── */
+@theme {
+  --color-porcelain: #f7f8f6;
+  --color-ink: #16211e;
+  --color-pine: #1e4d40;
+  --color-pine-deep: #163b31;
+  --color-lime: #c9f24e;
+  --color-focus: #0e1513;
+  --color-focus-ink: #e8efea;
+  --color-focus-dim: #2a3833;
+
+  /* muted domain hues — data viz and chips only */
+  --color-dom-speed: #5b7a9e;
+  --color-dom-decision: #c96a54;
+  --color-dom-memory-w: #7e6bb8;
+  --color-dom-attention: #b8863b;
+  --color-dom-visual: #3e8a80;
+  --color-dom-memory: #c06a85;
+
+  /* Gotham is the brand face; Montserrat is the bundled fallback. */
+  --font-display: "Gotham", var(--font-montserrat), "Helvetica Neue", sans-serif;
+  --font-body: "Gotham", var(--font-montserrat), system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-porcelain);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  /* larger type throughout — 18px base, everything rem-based scales with it */
+  font-size: 112.5%;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* tabular numerals for every score, timer, and latency */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* ── Focus Mode ───────────────────────────────────────────────────── */
+.focus-enter {
+  animation: focus-dim 600ms ease-out both;
+}
+@keyframes focus-dim {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.countdown-breathe {
+  animation: breathe 1000ms ease-in-out both;
+}
+@keyframes breathe {
+  0% { transform: scale(0.92); opacity: 0; }
+  30% { transform: scale(1); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: scale(1.02); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-enter, .countdown-breathe { animation-duration: 1ms; }
+  * { transition-duration: 1ms !important; }
+}
+
+/* score count-up tile */
+.tile {
+  @apply rounded-2xl border border-ink/8 bg-white p-4;
+}
+
+/* hairline progress track */
+.hairline-track {
+  height: 2px;
+  background: var(--color-focus-dim);
+}
+.hairline-fill {
+  height: 2px;
+  background: var(--color-lime);
+  transition: width 200ms linear;
+}
