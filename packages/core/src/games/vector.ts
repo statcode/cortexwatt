@@ -36,6 +36,10 @@ export const vector: GameModule<VectorSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const n = spec.trials.length;
     ctx.controls.clear();
 
@@ -83,7 +87,7 @@ export const vector: GameModule<VectorSpec> = {
         drawWaiting,
       );
       if (falseStart) {
-        results.push({
+        record({
           trial_index: i,
           onset_ms: scheduledOnset,
           response_ms: falseStart.t,
@@ -97,6 +101,7 @@ export const vector: GameModule<VectorSpec> = {
       }
 
       const onset = await paintFrame(clocks, () => drawRing(trial.sector, trial.reverse));
+      ctx.onStimulus?.(onset);
 
       // Await the first *directional* input in the window.
       let responded: number | null = null;
@@ -123,7 +128,7 @@ export const vector: GameModule<VectorSpec> = {
 
       const target = trial.reverse ? (trial.sector + 3) % 6 : trial.sector;
       const correct = responded !== null && responded === target;
-      results.push({
+      record({
         trial_index: i,
         onset_ms: onset,
         response_ms: responseT,

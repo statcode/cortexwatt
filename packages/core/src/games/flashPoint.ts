@@ -23,6 +23,10 @@ export const flashPoint: GameModule<FlashPointSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const n = spec.trials.length;
     ctx.controls.clear();
 
@@ -44,7 +48,7 @@ export const flashPoint: GameModule<FlashPointSpec> = {
 
       const { falseStart, scheduledOnset } = await runForeperiod(ctx, fp, drawWaiting);
       if (falseStart) {
-        results.push({
+        record({
           trial_index: i,
           onset_ms: scheduledOnset,
           response_ms: falseStart.t,
@@ -59,6 +63,7 @@ export const flashPoint: GameModule<FlashPointSpec> = {
       }
 
       const onset = await paintFrame(clocks, drawStimulus);
+      ctx.onStimulus?.(onset);
       const ev = await ctx.input.next({
         deadline: onset + spec.response_window_ms,
         signal: ctx.abortSignal,
@@ -67,7 +72,7 @@ export const flashPoint: GameModule<FlashPointSpec> = {
       // Event painted-race guard: a response stamped before the actual paint
       // is a false start, not a superhuman RT.
       const isFalseStart = ev !== null && ev.t < onset;
-      results.push({
+      record({
         trial_index: i,
         onset_ms: onset,
         response_ms: ev?.t ?? null,

@@ -15,6 +15,70 @@ import {
   type TrialResult,
 } from "@cortexwatt/core";
 import type { DeviceInfo } from "@/lib/api";
+import { getPrefs } from "@/lib/prefs";
+
+/** Real-time speed gauge — a stopwatch you race. Idle through the foreperiod
+ * (it must never telegraph the stimulus), it starts sweeping at stimulus
+ * onset, counts up live, and freezes at your response. Updated imperatively
+ * via refs in its own rAF loop so the game's paint path stays untouched.
+ * Opt-in via Preferences; bottom-left. */
+const GAUGE_FULL_MS = 900; // arc sweeps 0 → full over the slowest window
+const GAUGE_ARC_LEN = Math.PI * 28;
+
+interface GaugeHandles {
+  arc: SVGPathElement | null;
+  num: HTMLSpanElement | null;
+}
+
+function paintGauge(h: GaugeHandles, rt: number | null, frozen: boolean): void {
+  const f = rt === null ? 0 : Math.min(1, rt / GAUGE_FULL_MS);
+  if (h.arc) {
+    h.arc.setAttribute("stroke-dasharray", `${GAUGE_ARC_LEN * f} ${GAUGE_ARC_LEN}`);
+    h.arc.setAttribute("stroke", frozen ? "var(--color-lime)" : "var(--color-focus-ink)");
+    h.arc.setAttribute("opacity", frozen ? "1" : "0.55");
+  }
+  if (h.num) {
+    h.num.textContent = rt === null ? "—" : String(Math.round(rt));
+    h.num.style.opacity = frozen ? "1" : "0.55";
+  }
+}
+
+function SpeedGauge({ handles }: { handles: React.RefObject<GaugeHandles> }) {
+  return (
+    <div className="pointer-events-none absolute bottom-16 left-5 flex flex-col items-center">
+      <svg width="72" height="42" viewBox="0 0 72 42" aria-hidden="true">
+        <path
+          d="M 8 38 A 28 28 0 0 1 64 38"
+          fill="none"
+          stroke="var(--color-focus-dim)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          ref={(el) => {
+            handles.current.arc = el;
+          }}
+          d="M 8 38 A 28 28 0 0 1 64 38"
+          fill="none"
+          stroke="var(--color-lime)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={`0 ${GAUGE_ARC_LEN}`}
+        />
+      </svg>
+      <span className="num -mt-3 text-sm font-semibold text-focus-ink/80">
+        <span
+          ref={(el) => {
+            handles.current.num = el;
+          }}
+        >
+          —
+        </span>{" "}
+        <span className="font-normal text-focus-ink/40">ms</span>
+      </span>
+    </div>
+  );
+}
 
 export type FocusOutcome =
   | { kind: "complete"; trials: TrialResult[]; device: DeviceInfo }
@@ -46,6 +110,9 @@ export function FocusSession({
   const [progress, setProgress] = useState(0);
   const [buttons, setButtons] = useState<ControlButton[]>([]);
   const [interrupted, setInterrupted] = useState(false);
+  const [speedoOn, setSpeedoOn] = useState(false);
+  const gaugeHandles = useRef<GaugeHandles>({ arc: null, num: null });
+  const gaugeLoop = useRef<{ onset: number | null; raf: number }>({ onset: null, raf: 0 });
   const inputRef = useRef<QueueInput | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const startedRef = useRef(false);
@@ -99,6 +166,24 @@ export function FocusSession({
     abortRef.current = abort;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const speedometer = getPrefs().speedometer;
+    setSpeedoOn(speedometer);
+
+    const startGauge = (onset: number) => {
+      gaugeLoop.current.onset = onset;
+      cancelAnimationFrame(gaugeLoop.current.raf);
+      const tick = () => {
+        if (gaugeLoop.current.onset === null) return;
+        paintGauge(gaugeHandles.current, performance.now() - gaugeLoop.current.onset, false);
+        gaugeLoop.current.raf = requestAnimationFrame(tick);
+      };
+      gaugeLoop.current.raf = requestAnimationFrame(tick);
+    };
+    const freezeGauge = (rt: number | null) => {
+      gaugeLoop.current.onset = null;
+      cancelAnimationFrame(gaugeLoop.current.raf);
+      paintGauge(gaugeHandles.current, rt, rt !== null);
+    };
 
     (async () => {
       const refresh = await estimateRefresh();
@@ -120,6 +205,13 @@ export function FocusSession({
             clear: () => setButtons([]),
           },
           onTrialProgress: (i, n) => setProgress(n > 0 ? i / n : 0),
+          onStimulus: speedometer ? startGauge : undefined,
+          onTrialResult: speedometer
+            ? (r) => {
+                if (r.false_start || r.response_ms === null) freezeGauge(null);
+                else freezeGauge(r.response_ms - r.onset_ms);
+              }
+            : undefined,
           abortSignal: abort.signal,
           interruption: watcher,
           reducedMotion,
@@ -143,6 +235,8 @@ export function FocusSession({
       abort.abort();
       input.detach();
       watcher.detach();
+      gaugeLoop.current.onset = null;
+      cancelAnimationFrame(gaugeLoop.current.raf);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [countdown, gameId, spec]);
@@ -210,6 +304,9 @@ export function FocusSession({
             ⏸
           </button>
         )}
+
+        {/* opt-in real-time speed gauge (Preferences → In-game speed readout) */}
+        {speedoOn && !interrupted && countdown === null && <SpeedGauge handles={gaugeHandles} />}
 
         {/* quiet exit — leaves without submitting; the session simply expires */}
         {!interrupted && (

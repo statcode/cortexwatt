@@ -13,6 +13,10 @@ export const echoGrid: GameModule<EchoGridSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const n = spec.trials.length;
 
     for (let i = 0; i < n; i++) {
@@ -93,6 +97,7 @@ export const echoGrid: GameModule<EchoGridSpec> = {
       const chosen: number[] = [];
       let cursor: number | null = null;
       const onset = await paintFrame(clocks, () => drawGrid({ chosen }));
+      ctx.onStimulus?.(onset);
       let responseT: number | null = null;
       let confirmed = false;
 
@@ -140,7 +145,7 @@ export const echoGrid: GameModule<EchoGridSpec> = {
 
       const nCorrect = chosen.filter((cell) => targetSet.has(cell)).length;
       const nExtra = chosen.length - nCorrect;
-      results.push({
+      record({
         trial_index: i,
         onset_ms: onset,
         response_ms: responseT,

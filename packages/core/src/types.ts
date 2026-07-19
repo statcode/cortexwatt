@@ -116,6 +116,11 @@ export interface GameContext {
   input: InputAdapter;
   controls: ControlBar;
   onTrialProgress(i: number, n: number): void;
+  /** Fired as each trial completes (drives the opt-in speed readout). */
+  onTrialResult?(result: TrialResult): void;
+  /** Fired at each measured stimulus onset — the moment the RT clock starts.
+   * Drives the opt-in real-time speed gauge; never fired during foreperiods. */
+  onStimulus?(onset_ms: number): void;
   abortSignal: AbortSignal;
   /** True once since last consume() if the tab blurred/hid mid-trial. */
   interruption: { consume(): boolean };

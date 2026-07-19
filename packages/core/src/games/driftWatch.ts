@@ -74,6 +74,10 @@ export const driftWatch: GameModule<DriftWatchSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const nRounds = spec.rounds.length;
     ctx.controls.clear();
 
@@ -170,6 +174,7 @@ export const driftWatch: GameModule<DriftWatchSpec> = {
       const selected = new Set<number>();
       let cursor: number | null = null;
       const onset = await paintFrame(clocks, () => drawOrbs(orbs, { selected }));
+      ctx.onStimulus?.(onset);
       let lastT: number | null = null;
 
       const nearestOrb = (x: number, y: number): number | null => {
@@ -206,7 +211,7 @@ export const driftWatch: GameModule<DriftWatchSpec> = {
 
       const selectedIds = [...selected].sort((a, b) => a - b);
       const nCorrect = selectedIds.filter((id) => targets.has(id)).length;
-      results.push({
+      record({
         trial_index: round,
         onset_ms: onset,
         response_ms: lastT,

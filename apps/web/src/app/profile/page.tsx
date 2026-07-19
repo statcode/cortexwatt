@@ -9,6 +9,7 @@ import { api, hasToken, setToken, type MeSummary } from "@/lib/api";
 import { CortexRadar } from "@/components/CortexRadar";
 import { DomainChip } from "@/components/DomainChip";
 import { DOMAIN_LABEL, DOMAIN_ORDER } from "@/lib/domains";
+import { getPrefs, setPref, type Prefs } from "@/lib/prefs";
 
 function CiSparkline({ history }: { history: { value: number; at: string }[] }) {
   if (history.length < 2) return null;
@@ -31,12 +32,14 @@ function CiSparkline({ history }: { history: { value: number; at: string }[] }) 
 export default function ProfilePage() {
   const router = useRouter();
   const [summary, setSummary] = useState<MeSummary | null>(null);
+  const [prefs, setPrefs] = useState<Prefs | null>(null);
 
   useEffect(() => {
     if (!hasToken()) {
       router.replace("/login");
       return;
     }
+    setPrefs(getPrefs());
     api.summary().then(setSummary).catch(() => {});
   }, [router]);
 
@@ -96,6 +99,26 @@ export default function ProfilePage() {
             );
           })}
         </div>
+      </div>
+
+      <h2 className="display mt-10 text-xl font-semibold">Preferences</h2>
+      <div className="mt-3 rounded-2xl border border-ink/8 bg-white">
+        <label className="flex cursor-pointer items-center gap-4 px-5 py-4">
+          <input
+            type="checkbox"
+            checked={prefs?.speedometer ?? false}
+            onChange={(e) => setPrefs(setPref("speedometer", e.target.checked))}
+            className="h-5 w-5 accent-[var(--color-pine)]"
+          />
+          <span className="flex-1">
+            <span className="block font-medium">In-game speed gauge</span>
+            <span className="block text-sm text-ink/55">
+              A live gauge that starts sweeping the instant the stimulus appears and
+              freezes at your reaction time. It stays idle while you wait, so it never
+              hints at when the stimulus is coming.
+            </span>
+          </span>
+        </label>
       </div>
 
       <h2 className="display mt-10 text-xl font-semibold">Recent sessions</h2>

@@ -30,6 +30,10 @@ export const wideAngle: GameModule<WideAngleSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const n = spec.trials.length;
 
     const { c, cx, cy, r, u } = s;
@@ -113,7 +117,7 @@ export const wideAngle: GameModule<WideAngleSpec> = {
         drawWaiting,
       );
       if (falseStart) {
-        results.push({
+        record({
           trial_index: i,
           onset_ms: scheduledOnset,
           response_ms: falseStart.t,
@@ -128,6 +132,7 @@ export const wideAngle: GameModule<WideAngleSpec> = {
 
       // Flash
       const onset = await paintFrame(clocks, () => drawFlash(trial, i));
+      ctx.onStimulus?.(onset);
       await waitUntil(clocks, onset + trial.flash_ms, ctx.abortSignal);
       await paintFrame(clocks, () => clearField(s));
 
@@ -186,7 +191,7 @@ export const wideAngle: GameModule<WideAngleSpec> = {
 
       const centerOk = chosenSym === trial.center_symbol;
       const bearingOk = arcDelta(chosenArc, trial.bearing_arc) <= 1;
-      results.push({
+      record({
         trial_index: i,
         onset_ms: onset,
         response_ms: responseT,

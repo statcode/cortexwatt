@@ -16,6 +16,10 @@ export const stackwise: GameModule<StackwiseSpec> = {
     const clocks = clocksOf(ctx);
     const s = stage(ctx.canvas);
     const results: TrialResult[] = [];
+    const record = (r: TrialResult) => {
+      results.push(r);
+      ctx.onTrialResult?.(r);
+    };
     const total = spec.presentations.length;
     const scoreableTotal = total - spec.n;
 
@@ -71,6 +75,7 @@ export const stackwise: GameModule<StackwiseSpec> = {
 
       ctx.input.clear();
       const onset = await paintFrame(clocks, () => drawGrid(cell));
+      if (isMatch !== null) ctx.onStimulus?.(onset);
       const windowEnd = onset + LIT_MS + spec.isi_ms;
 
       let responded: boolean | null = null;
@@ -102,7 +107,7 @@ export const stackwise: GameModule<StackwiseSpec> = {
       await waitUntil(clocks, windowEnd, ctx.abortSignal);
 
       if (isMatch !== null) {
-        results.push({
+        record({
           trial_index: i,
           onset_ms: onset,
           response_ms: responseT,
