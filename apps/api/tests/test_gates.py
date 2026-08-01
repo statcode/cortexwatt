@@ -5,7 +5,7 @@ from app.metrics import compute_metrics
 from app.specgen import generate
 from app.validation import rating_jump_guard, run_gates
 
-from .conftest import bot_flash_point
+from .conftest import bot_flash_point, bot_reflex_drop
 
 
 def make(spec=None, **bot_kwargs):
@@ -28,6 +28,42 @@ def test_gate3_payload_shape_invalid():
     ]
     res = run_gates("echo_grid", spec, 30, trials)
     assert res.status == "rejected" and res.reason == "payload_shape_invalid"
+
+
+def test_gate3_reflex_drop_restated_target_rod_rejected():
+    """The client may not tell the server which rod dropped — the spec does."""
+    spec = generate("reflex_drop", 5, 30)
+    trials = bot_reflex_drop(spec)
+    # claim the rod you grabbed was the one that fell
+    trials[3]["payload"] = {"rod": (spec["trials"][3]["rod"] + 1) % 6, "responded_rod": None}
+    res = run_gates("reflex_drop", spec, 30, trials)
+    assert res.status == "rejected" and res.reason == "payload_shape_invalid"
+
+
+def test_gate3_reflex_drop_rod_out_of_range_rejected():
+    spec = generate("reflex_drop", 5, 30)
+    trials = bot_reflex_drop(spec)
+    trials[0]["payload"] = {"rod": spec["trials"][0]["rod"], "responded_rod": 99}
+    res = run_gates("reflex_drop", spec, 30, trials)
+    assert res.status == "rejected" and res.reason == "payload_shape_invalid"
+
+
+def test_gate5_reflex_drop_is_rt_scored():
+    """Six-choice RTs still can't beat the 140 ms physiological floor."""
+    spec = generate("reflex_drop", 5, 30)
+    trials = bot_reflex_drop(spec, rt_median=120.0, accuracy=1.0)
+    res = run_gates("reflex_drop", spec, 30, trials)
+    assert res.status == "rejected" and res.reason == "median_rt_too_fast"
+
+
+def test_reflex_drop_wrong_rod_costs_accuracy_not_speed():
+    """A grab at the wrong rod is a real response: it lowers accuracy, and its
+    latency is excluded from median RT (which scores catches only)."""
+    spec = generate("reflex_drop", 5, 30)
+    clean = compute_metrics("reflex_drop", bot_reflex_drop(spec, accuracy=1.0))
+    sloppy = compute_metrics("reflex_drop", bot_reflex_drop(spec, accuracy=0.6))
+    assert sloppy["accuracy"] < clean["accuracy"]
+    assert sloppy["performance_index"] < clean["performance_index"]
 
 
 def test_gate4_sub90_reclassified_as_false_start():

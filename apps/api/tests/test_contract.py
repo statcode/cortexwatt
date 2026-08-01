@@ -2,7 +2,7 @@
 
 import pytest
 
-from .conftest import auth, bot_flash_point, login
+from .conftest import auth, bot_flash_point, bot_reflex_drop, login
 
 
 async def issue(client, token, game_id="flash_point"):
@@ -108,6 +108,52 @@ async def test_leaderboard_ranks_two_users(client):
     board = (await client.get("/v1/leaderboards/flash_point", headers=auth(token))).json()
     assert [e["handle"] for e in board["entries"]] == ["fast_fran", "slow_sam"]
     assert board["me"]["rank"] == 2
+
+
+async def test_reflex_drop_full_valid_flow(client):
+    """Second processing_speed game: issue → play → validate → rate."""
+    token = await login(client, "dropper")
+    sess = await issue(client, token, game_id="reflex_drop")
+    assert sess["spec"]["rod_count"] == 6
+    assert len(sess["spec"]["trials"]) == 24
+
+    res = await client.post(
+        f"/v1/sessions/{sess['session_id']}/results",
+        json={"token": sess["token"], "trials": bot_reflex_drop(sess["spec"]), "device": {}},
+        headers=auth(token),
+    )
+    body = res.json()
+    assert body["status"] == "valid", body
+    assert 0.0 <= body["server_metrics"]["performance_index"] <= 1.0
+    assert body["new_rating"] is not None
+
+    # It rates the same domain Flash Point does.
+    summary = (await client.get("/v1/me/summary", headers=auth(token))).json()
+    domains = {r["domain"] for r in summary["ratings"]}
+    assert domains == {"processing_speed"}
+    speed_games = [g["id"] for g in summary["games"] if g["domain"] == "processing_speed"]
+    assert sorted(speed_games) == ["flash_point", "reflex_drop"]
+
+
+async def test_reflex_drop_staircase_convergence(client):
+    """Bot with fixed ability stabilizes within ±8 difficulty across 12 sessions."""
+    token = await login(client, "steady_dropper")
+    difficulties = []
+    for i in range(12):
+        sess = await issue(client, token, game_id="reflex_drop")
+        difficulties.append(sess["difficulty"])
+        res = await client.post(
+            f"/v1/sessions/{sess['session_id']}/results",
+            json={
+                "token": sess["token"],
+                "trials": bot_reflex_drop(sess["spec"], seed=100 + i),
+                "device": {},
+            },
+            headers=auth(token),
+        )
+        assert res.json()["status"] == "valid"
+    tail = difficulties[-4:]
+    assert max(tail) - min(tail) <= 8, difficulties
 
 
 async def test_staircase_convergence(client):

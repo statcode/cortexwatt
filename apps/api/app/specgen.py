@@ -14,6 +14,7 @@ Spec = dict[str, Any]
 
 GAME_DOMAINS = {
     "flash_point": "processing_speed",
+    "reflex_drop": "processing_speed",
     "vector": "decision_control",
     "stackwise": "working_memory",
     "drift_watch": "attention",
@@ -65,6 +66,25 @@ def generate(game_id: str, seed: int, difficulty: int) -> Spec:
             "game": "flash_point",
             "trials": [{"foreperiod_ms": _foreperiod(rng)} for _ in range(20)],
             "response_window_ms": round(900 - 3 * d),
+        }
+
+    if game_id == "reflex_drop":
+        rod_count = 6
+        trials = []
+        prev = -1
+        for _ in range(24):
+            # No immediate repeats: a rod dropping twice in a row would let the
+            # player pre-position a finger, collapsing the six-choice decision.
+            rod = rng.randint(0, rod_count - 1)
+            while rod == prev:
+                rod = rng.randint(0, rod_count - 1)
+            trials.append({"rod": rod, "foreperiod_ms": _foreperiod(rng)})
+            prev = rod
+        return {
+            "game": "reflex_drop",
+            "rod_count": rod_count,
+            "trials": trials,
+            "catch_window_ms": round(900 - 4 * d),
         }
 
     if game_id == "vector":

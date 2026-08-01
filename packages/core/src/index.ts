@@ -9,17 +9,19 @@ export { QueueInput } from "./input";
 
 import type { GameId, GameModule, GameSpec } from "./types";
 import { flashPoint } from "./games/flashPoint";
+import { reflexDrop } from "./games/reflexDrop";
 import { vector } from "./games/vector";
 import { stackwise } from "./games/stackwise";
 import { driftWatch } from "./games/driftWatch";
 import { wideAngle } from "./games/wideAngle";
 import { echoGrid } from "./games/echoGrid";
 
-export { flashPoint, vector, stackwise, driftWatch, wideAngle, echoGrid };
+export { flashPoint, reflexDrop, vector, stackwise, driftWatch, wideAngle, echoGrid };
 export { initOrbs, stepOrbs } from "./games/driftWatch";
 
 export const games: Record<GameId, GameModule<GameSpec>> = {
   flash_point: flashPoint as GameModule<GameSpec>,
+  reflex_drop: reflexDrop as GameModule<GameSpec>,
   vector: vector as GameModule<GameSpec>,
   stackwise: stackwise as GameModule<GameSpec>,
   drift_watch: driftWatch as GameModule<GameSpec>,
@@ -36,6 +38,12 @@ export const GAME_META: Record<
     domain: "processing_speed",
     tagline: "A lime disc appears after an unpredictable pause — respond the instant it does.",
     keys: "Space — respond",
+  },
+  reflex_drop: {
+    name: "Reflex Drop",
+    domain: "processing_speed",
+    tagline: "Six rods hang from a rail. One drops without warning — catch it before it clears the line.",
+    keys: "S D F · J K L — one key per rod",
   },
   vector: {
     name: "Vector",

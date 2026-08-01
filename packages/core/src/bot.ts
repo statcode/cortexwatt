@@ -61,6 +61,44 @@ export function botPlay(spec: GameSpec, ability: BotAbility, seed = 42): TrialRe
       });
       break;
     }
+    case "reflex_drop": {
+      spec.trials.forEach((t, i) => {
+        clock += t.foreperiod_ms + 400;
+        const onset = clock;
+        const payload = { rod: t.rod, responded_rod: null as number | null };
+        if (rng() < fsRate) {
+          out.push(
+            mk(i, {
+              onset_ms: onset,
+              response_ms: onset - 50 - rng() * 200,
+              false_start: true,
+              payload,
+            }),
+          );
+          return;
+        }
+        const rt = sampleRT() * 1.5; // six-choice RT costs a Hick's-law step
+        if (rt > spec.catch_window_ms) {
+          out.push(mk(i, { onset_ms: onset, payload })); // rod cleared the line
+          clock = onset + spec.catch_window_ms;
+          return;
+        }
+        const responded =
+          rng() < ability.accuracy
+            ? t.rod
+            : (t.rod + 1 + Math.floor(rng() * (spec.rod_count - 1))) % spec.rod_count;
+        out.push(
+          mk(i, {
+            onset_ms: onset,
+            response_ms: onset + rt,
+            correct: responded === t.rod,
+            payload: { rod: t.rod, responded_rod: responded },
+          }),
+        );
+        clock = onset + rt;
+      });
+      break;
+    }
     case "vector": {
       spec.trials.forEach((t, i) => {
         clock += t.foreperiod_ms + 800;

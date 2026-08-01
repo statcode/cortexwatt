@@ -13,7 +13,7 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: "CortexWatt — Train",
-  description: "Measured brain training. Six games, six domains, one honest index.",
+  description: "Measured brain training. Seven games, six domains, one honest index.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -8,10 +8,11 @@ from .specgen import expected_trial_count
 
 Trial = dict[str, Any]
 
-RT_SCORED_GAMES = {"flash_point", "vector"}
+RT_SCORED_GAMES = {"flash_point", "reflex_drop", "vector"}
 
 REQUIRED_PAYLOAD_KEYS: dict[str, set[str]] = {
     "flash_point": set(),
+    "reflex_drop": {"rod", "responded_rod"},
     "vector": {"sector", "reverse", "responded_sector"},
     "stackwise": {"is_match", "responded_match"},
     "drift_watch": {"selected_ids", "target_ids", "n_correct"},
@@ -32,6 +33,14 @@ def payload_shape_ok(game_id: str, spec: dict, trials: list[Trial]) -> bool:
     for t in trials:
         if not required <= set(t["payload"].keys()):
             return False
+    if game_id == "reflex_drop":
+        for t, trial_spec in zip(trials, spec["trials"]):
+            # The client may not restate which rod dropped — that comes from the spec.
+            if t["payload"]["rod"] != trial_spec["rod"]:
+                return False
+            responded = t["payload"]["responded_rod"]
+            if responded is not None and not 0 <= responded < spec["rod_count"]:
+                return False
     if game_id == "drift_watch":
         for t, round_spec in zip(trials, spec["rounds"]):
             ids = set(range(round_spec["orb_count"]))

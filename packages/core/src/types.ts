@@ -10,6 +10,7 @@ export type Domain =
 
 export type GameId =
   | "flash_point"
+  | "reflex_drop"
   | "vector"
   | "stackwise"
   | "drift_watch"
@@ -22,6 +23,15 @@ export interface FlashPointSpec {
   game: "flash_point";
   trials: { foreperiod_ms: number }[];
   response_window_ms: number;
+}
+
+export interface ReflexDropSpec {
+  game: "reflex_drop";
+  /** Rods on the rail; index 0 is leftmost. */
+  rod_count: number;
+  trials: { rod: number; foreperiod_ms: number }[];
+  /** Time from release until the rod passes the catch line — the response window. */
+  catch_window_ms: number;
 }
 
 export interface VectorSpec {
@@ -63,6 +73,7 @@ export interface EchoGridSpec {
 
 export type GameSpec =
   | FlashPointSpec
+  | ReflexDropSpec
   | VectorSpec
   | StackwiseSpec
   | DriftWatchSpec

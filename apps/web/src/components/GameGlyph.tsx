@@ -9,6 +9,27 @@ const GLYPHS: Record<string, (c: string) => React.ReactNode> = {
       <circle cx="24" cy="24" r="15" fill="none" stroke={c} strokeWidth="1.5" opacity="0.35" />
     </>
   ),
+  reflex_drop: (c) => (
+    <>
+      <line x1="11" y1="13" x2="37" y2="13" stroke={c} strokeWidth="1.5" opacity="0.45" />
+      {[14, 21, 35].map((x) => (
+        <rect
+          key={x}
+          x={x - 2}
+          y="13"
+          width="4"
+          height="16"
+          rx="2"
+          fill="none"
+          stroke={c}
+          strokeWidth="1.3"
+          opacity="0.4"
+        />
+      ))}
+      {/* the released rod, caught mid-fall */}
+      <rect x="26" y="21" width="4" height="16" rx="2" fill={c} />
+    </>
+  ),
   vector: (c) => (
     <>
       {[0, 60, 120, 180, 240, 300].map((a) => (

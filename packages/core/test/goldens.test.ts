@@ -16,7 +16,7 @@ function expectedTrialCount(spec: GameSpec): number {
 
 describe("golden specs interpret cleanly in core", () => {
   const files = readdirSync(GOLDENS).filter((f) => f.endsWith(".json"));
-  it("has all 18 goldens", () => expect(files.length).toBe(18));
+  it("has all 21 goldens", () => expect(files.length).toBe(21));
 
   for (const file of files) {
     it(file, () => {

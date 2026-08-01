@@ -35,6 +35,24 @@ export function generatePracticeSpec(
         response_window_ms: Math.round(900 - 3 * d),
       };
 
+    case "reflex_drop": {
+      const rodCount = 6;
+      const trials: { rod: number; foreperiod_ms: number }[] = [];
+      let prev = -1;
+      for (let i = 0; i < cap(24); i++) {
+        let rod = randInt(rng, 0, rodCount - 1);
+        while (rod === prev) rod = randInt(rng, 0, rodCount - 1); // no immediate repeats
+        trials.push({ rod, foreperiod_ms: sampleForeperiod(rng) });
+        prev = rod;
+      }
+      return {
+        game: "reflex_drop",
+        rod_count: rodCount,
+        trials,
+        catch_window_ms: Math.round(900 - 4 * d),
+      };
+    }
+
     case "vector": {
       const n = cap(24);
       const reverseCount = Math.round((n * (10 + 0.2 * d)) / 100);

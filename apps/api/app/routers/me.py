@@ -19,6 +19,7 @@ router = APIRouter(prefix="/v1/me", tags=["me"])
 
 GAME_NAMES = {
     "flash_point": "Flash Point",
+    "reflex_drop": "Reflex Drop",
     "vector": "Vector",
     "stackwise": "Stackwise",
     "drift_watch": "Drift Watch",

@@ -63,6 +63,13 @@ export function performanceIndex(
       const speed = med === null ? 0 : clamp((450 - med) / 250, 0, 1);
       return clamp(0.7 * speed + 0.3 * (1 - m.false_start_rate), 0, 1);
     }
+    case "reflex_drop": {
+      // 0.5·speed + 0.35·accuracy + 0.15·(1 − false_start_rate).
+      // speed anchors to six-choice RT (700 ms → 0, 400 ms → 1), not the simple-RT
+      // scale Flash Point uses — picking a rod costs a Hick's-law step.
+      const speed = med === null ? 0 : clamp((700 - med) / 300, 0, 1);
+      return clamp(0.5 * speed + 0.35 * m.accuracy + 0.15 * (1 - m.false_start_rate), 0, 1);
+    }
     case "vector": {
       // 0.55·acc + 0.35·speed + 0.10·reverse_accuracy; speed = clamp((900 − medRT)/500)
       const speed = med === null ? 0 : clamp((900 - med) / 500, 0, 1);

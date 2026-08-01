@@ -18,3 +18,6 @@ coverage/
 02-technical-implementation.md
 04-claude-design-prompt-games.md
 05-prd-playable-games.md
+
+# per-run E2E screenshot output
+apps/web/e2e/shots/

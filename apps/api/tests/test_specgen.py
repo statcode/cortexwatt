@@ -36,6 +36,18 @@ def test_difficulty_parameter_mapping():
     assert len(fp0["trials"]) == 20
     assert all(1000 <= t["foreperiod_ms"] <= 4000 for t in fp0["trials"])
 
+    rd0 = generate("reflex_drop", 1, 0)
+    rd100 = generate("reflex_drop", 1, 100)
+    assert rd0["catch_window_ms"] == 900
+    assert rd100["catch_window_ms"] == 500
+    assert len(rd0["trials"]) == 24
+    assert rd0["rod_count"] == 6
+    assert all(0 <= t["rod"] < 6 for t in rd0["trials"])
+    assert all(1000 <= t["foreperiod_ms"] <= 4000 for t in rd0["trials"])
+    # no immediate repeats — a repeat would let the player pre-position a finger
+    rods = [t["rod"] for t in rd0["trials"]]
+    assert all(a != b for a, b in zip(rods, rods[1:]))
+
     v100 = generate("vector", 1, 100)
     assert v100["response_window_ms"] == 700
     assert sum(t["reverse"] for t in v100["trials"]) == round(24 * 0.30)

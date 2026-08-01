@@ -10,6 +10,7 @@ import { api, hasToken, type MeSummary } from "@/lib/api";
 import { DomainChip } from "@/components/DomainChip";
 import { GameGlyph } from "@/components/GameGlyph";
 import { DOMAIN_LABEL } from "@/lib/domains";
+import { byUncertainty } from "@/lib/recommend";
 
 function timeAgo(iso: string | null): string {
   if (!iso) return "Not played yet";
@@ -35,8 +36,7 @@ export default function TrainHub() {
   const recommended = useMemo(() => {
     if (!summary) return null;
     // Most-uncertain domain first: unrated (RD 350) beats everything.
-    const byUncertainty = [...summary.games].sort((a, b) => (b.rd ?? 350) - (a.rd ?? 350));
-    return byUncertainty[0] ?? null;
+    return byUncertainty(summary.games)[0] ?? null;
   }, [summary]);
 
   const playedAny = summary?.games.some((g) => g.last_played) ?? false;
@@ -50,7 +50,7 @@ export default function TrainHub() {
         <div>
           <h1 className="display text-3xl font-semibold">Train</h1>
           <p className="mt-1 text-ink/60">
-            Six games, six domains. Every session is measured and rated.
+            Seven games, six domains. Every session is measured and rated.
           </p>
         </div>
       </div>

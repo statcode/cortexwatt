@@ -65,6 +65,12 @@ def performance_index(game_id: str, trials: list[Trial], m: dict[str, Any]) -> f
         speed = 0.0 if med is None else _clamp((450 - med) / 250)
         return _clamp(0.7 * speed + 0.3 * (1 - m["false_start_rate"]))
 
+    if game_id == "reflex_drop":
+        # speed anchors to six-choice RT (700 ms → 0, 400 ms → 1), not the
+        # simple-RT scale Flash Point uses — picking a rod costs a Hick's-law step.
+        speed = 0.0 if med is None else _clamp((700 - med) / 300)
+        return _clamp(0.5 * speed + 0.35 * m["accuracy"] + 0.15 * (1 - m["false_start_rate"]))
+
     if game_id == "vector":
         speed = 0.0 if med is None else _clamp((900 - med) / 500)
         rev = [t for t in sc if t["payload"].get("reverse")]

@@ -1,6 +1,6 @@
 # CortexWatt
 
-Measured brain training: six precisely-timed games across six cognitive domains, with
+Measured brain training: seven precisely-timed games across six cognitive domains, with
 server-authoritative sessions, Glicko-2 skill ratings, a Cortex Index, and weekly
 leaderboards. Built to the specs in `05-prd-playable-games.md`,
 `02-technical-implementation.md`, and `04-claude-design-prompt-games.md`.
@@ -13,7 +13,7 @@ cortexwatt/
 │  ├─ web/   Next.js 15 (App Router) + Tailwind 4 — the Train area, Focus Mode, results
 │  └─ api/   FastAPI (Python 3.12, uv) — sessions, validation gates, Glicko-2, CI
 ├─ packages/
-│  └─ core/  @cortexwatt/core — pure-TS game runtime + all six game modules
+│  └─ core/  @cortexwatt/core — pure-TS game runtime + all seven game modules
 ├─ Makefile
 └─ turbo.json / pnpm-workspace.yaml
 ```
@@ -42,21 +42,26 @@ probe lives at `/dev/latency`.
 make test
 ```
 
-- **Python (42)** — golden determinism (18 committed spec goldens, byte-identical),
+- **Python (52)** — golden determinism (21 committed spec goldens, byte-identical),
   every §8 validation gate incl. quarantine paths, full API contract tests
-  (tamper/duplicate/reject flows), and 12-session staircase convergence.
-- **TypeScript (26)** — golden cross-check (core interprets every golden), Drift
+  (tamper/duplicate/reject flows), and 12-session staircase convergence per
+  RT-scored game.
+- **TypeScript (35)** — golden cross-check (core interprets every golden), Drift
   Watch physics determinism, and headless runtime tests that drive the real game
   loop with a virtual clock + synthetic timestamped input.
-- **E2E** — `cd apps/web && node e2e/flash-point.mjs` boots a real Chromium,
-  signs in, plays 20 trials of Flash Point by watching the canvas for the lime
-  stimulus, and asserts the results screen, trial-data view, and leaderboard.
+- **E2E** — `cd apps/web && node e2e/flash-point.mjs` (or `e2e/reflex-drop.mjs`)
+  boots a real Chromium, signs in, plays the game by watching the canvas for the
+  lime stimulus, and asserts the results screen, trial-data view, and
+  leaderboard. `reflex-drop.mjs` also writes canvas snapshots of the rack at
+  rest / in free fall / caught to `e2e/shots/` (gitignored) for eyeballing
+  visual changes.
 
-## The six games
+## The seven games
 
 | Game | Domain | Mechanic |
 |---|---|---|
 | Flash Point | Processing speed | Simple RT — lime disc after an unpredictable foreperiod |
+| Reflex Drop | Processing speed | Six-choice RT — catch the released rod before it clears the line |
 | Vector | Decision & control | 6-sector choice RT; ignited core = respond opposite |
 | Stackwise | Working memory | Spatial n-back on a 3×3 grid, adaptive N |
 | Drift Watch | Attention | Multi-object tracking, seeded reproducible physics |

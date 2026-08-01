@@ -11,6 +11,7 @@ import { DomainChip } from "@/components/DomainChip";
 import { GameChain, type ChainResult } from "@/components/GameChain";
 import { GameGlyph } from "@/components/GameGlyph";
 import { DOMAIN_LABEL } from "@/lib/domains";
+import { planGames } from "@/lib/recommend";
 
 export default function WorkoutPage() {
   const router = useRouter();
@@ -28,11 +29,8 @@ export default function WorkoutPage() {
 
   if (!summary) return <p className="mt-10 text-sm text-ink/50">Loading…</p>;
 
-  // Recommendation: least-certain (highest-RD) domains first.
-  const plan = [...summary.games]
-    .sort((a, b) => (b.rd ?? 350) - (a.rd ?? 350))
-    .slice(0, 3)
-    .map((g) => g.id as GameId);
+  // Recommendation: least-certain (highest-RD) domains first, one game per domain.
+  const plan = planGames(summary.games, 3).map((g) => g.id as GameId);
 
   if (phase === "running")
     return (

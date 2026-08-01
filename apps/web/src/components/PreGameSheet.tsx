@@ -13,6 +13,8 @@ import { GameGlyph } from "./GameGlyph";
 const SCORING: Record<string, string> = {
   flash_point:
     "Your index is 70% speed (median reaction vs a 450 ms anchor) and 30% discipline (avoiding false starts). The response window tightens as your level rises.",
+  reflex_drop:
+    "50% speed (median catch time against a 700 ms six-choice anchor), 35% accuracy — grabbing the wrong rod counts against you — and 15% discipline for not jumping before the release. The catch window tightens as your level rises, so the rods fall faster.",
   vector:
     "55% accuracy, 35% speed, 10% bonus for reverse-trial accuracy. Reverse trials get more frequent and the window tighter as your level rises.",
   stackwise:
@@ -58,6 +60,44 @@ function DemoLoop({ gameId }: { gameId: GameId }) {
           c.arc(cx, cy, 18, 0, Math.PI * 2);
           c.fill();
         }
+      } else if (gameId === "reflex_drop") {
+        const railY = 34;
+        const rodH = 62;
+        const catchY = 150;
+        const xs = [0, 1, 2, 3.7, 4.7, 5.7].map((o) => cx - 2.85 * 30 + o * 30);
+        c.strokeStyle = FOCUS.dim;
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(xs[0]! - 12, railY);
+        c.lineTo(xs[5]! + 12, railY);
+        c.stroke();
+        c.strokeStyle = FOCUS.dimmer;
+        c.setLineDash([4, 7]);
+        c.beginPath();
+        c.moveTo(xs[0]! - 12, catchY);
+        c.lineTo(xs[5]! + 12, catchY);
+        c.stroke();
+        c.setLineDash([]);
+        // rod 4 releases at T=1.4 and is caught at T=1.9 (same s = ½gt² fall)
+        const dropped = 4;
+        const win = 0.75;
+        const f = Math.min(1, Math.max(0, (T - 1.4) / win));
+        const fall = (catchY - railY - rodH) * Math.min(f, 0.66) ** 2;
+        xs.forEach((x, i) => {
+          const active = i === dropped && T > 1.4;
+          c.beginPath();
+          c.roundRect(x - 5, railY + (active ? fall : 0), 10, rodH, 5);
+          if (active) {
+            c.fillStyle = FOCUS.lime;
+            c.fill();
+          } else {
+            c.fillStyle = FOCUS.dimmer;
+            c.fill();
+            c.strokeStyle = FOCUS.dim;
+            c.lineWidth = 1.3;
+            c.stroke();
+          }
+        });
       } else if (gameId === "vector") {
         for (let k = 0; k < 6; k++) {
           const a0 = ((k * 60 - 26 - 90) * Math.PI) / 180;

@@ -64,6 +64,43 @@ def auth(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
+def bot_reflex_drop(spec: dict, rt_median: float = 520.0, accuracy: float = 0.90,
+                    fs_rate: float = 0.0, interrupted_rate: float = 0.0,
+                    seed: int = 7) -> list[dict]:
+    """Deterministic six-choice bot for contract tests.
+
+    `rt_median` is the *six-choice* RT (already includes the Hick's-law step over
+    simple RT), so it is not comparable to bot_flash_point's.
+    """
+    import random
+
+    rng = random.Random(seed)
+    trials = []
+    clock = 1000.0
+    n_rods = spec["rod_count"]
+    for i, t in enumerate(spec["trials"]):
+        clock += t["foreperiod_ms"] + 400
+        onset = clock
+        missed = dict(trial_index=i, onset_ms=onset, response_ms=None, correct=False,
+                      false_start=False, interrupted=rng.random() < interrupted_rate,
+                      payload={"rod": t["rod"], "responded_rod": None})
+        if rng.random() < fs_rate:
+            trials.append({**missed, "response_ms": onset - 120, "false_start": True})
+            continue
+        rt = rt_median * (0.85 + rng.random() * 0.4)
+        if rt > spec["catch_window_ms"]:
+            trials.append(missed)  # the rod cleared the catch line
+            clock = onset + spec["catch_window_ms"]
+            continue
+        got = t["rod"] if rng.random() < accuracy else (
+            t["rod"] + 1 + rng.randrange(n_rods - 1)
+        ) % n_rods
+        trials.append({**missed, "response_ms": onset + rt, "correct": got == t["rod"],
+                       "payload": {"rod": t["rod"], "responded_rod": got}})
+        clock = onset + rt
+    return trials
+
+
 def bot_flash_point(spec: dict, rt_median: float = 260.0, fs_rate: float = 0.0,
                     interrupted_rate: float = 0.0, seed: int = 7) -> list[dict]:
     """Deterministic simple bot for contract tests."""
