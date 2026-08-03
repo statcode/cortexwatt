@@ -5,7 +5,9 @@
  * canvas during play and keeps the most visually "loaded" frames as candidates.
  * Captures canvas pixels only (no HUD chrome), at devicePixelRatio 2.
  *
- * Run: node e2e/marketing-shots.mjs   (web on :3100, api on :8000)
+ * Run: WEB_URL=http://localhost:3000 node e2e/marketing-shots.mjs
+ *   (the CortexWatt app, plus api on :8000 — note :3100 is the landing page)
+ * Limit to specific games with ONLY=reflex_drop,vector
  */
 
 import { chromium } from "playwright";
@@ -19,12 +21,13 @@ const PLAY_MS = 10000; // watch window per pass (two passes: score, then grab)
 
 const GAMES = [
   { id: "flash_point", domain: "processing_speed" },
+  { id: "reflex_drop", domain: "processing_speed" },
   { id: "vector", domain: "decision_control" },
   { id: "stackwise", domain: "working_memory" },
   { id: "drift_watch", domain: "attention" },
   { id: "wide_angle", domain: "visual" },
   { id: "echo_grid", domain: "memory" },
-];
+].filter((g) => !process.env.ONLY || process.env.ONLY.split(",").includes(g.id));
 
 mkdirSync(OUT, { recursive: true });
 
