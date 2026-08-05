@@ -32,7 +32,7 @@ const GLYPHS: Record<string, (c: string) => React.ReactNode> = {
   ),
   vector: (c) => (
     <>
-      {[0, 60, 120, 180, 240, 300].map((a) => (
+      {[0, 90, 180, 270].map((a) => (
         <line
           key={a}
           x1={24 + 10 * Math.sin((a * Math.PI) / 180)}

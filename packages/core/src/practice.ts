@@ -63,7 +63,7 @@ export function generatePracticeSpec(
       return {
         game: "vector",
         trials: flags.map((reverse) => ({
-          sector: randInt(rng, 0, 5),
+          sector: randInt(rng, 0, 3),
           reverse,
           foreperiod_ms: sampleForeperiod(rng),
         })),

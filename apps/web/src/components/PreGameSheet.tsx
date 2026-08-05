@@ -99,9 +99,9 @@ function DemoLoop({ gameId }: { gameId: GameId }) {
           }
         });
       } else if (gameId === "vector") {
-        for (let k = 0; k < 6; k++) {
-          const a0 = ((k * 60 - 26 - 90) * Math.PI) / 180;
-          const a1 = ((k * 60 + 26 - 90) * Math.PI) / 180;
+        for (let k = 0; k < 4; k++) {
+          const a0 = ((k * 90 - 41 - 90) * Math.PI) / 180;
+          const a1 = ((k * 90 + 41 - 90) * Math.PI) / 180;
           const active = T > 1 && k === 1;
           c.strokeStyle = active ? FOCUS.lime : FOCUS.dim;
           c.lineWidth = active ? 4 : 1.5;

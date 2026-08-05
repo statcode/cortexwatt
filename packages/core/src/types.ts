@@ -36,6 +36,7 @@ export interface ReflexDropSpec {
 
 export interface VectorSpec {
   game: "vector";
+  /** sector 0–3, clockwise from up: 0 = ↑, 1 = →, 2 = ↓, 3 = ←. */
   trials: { sector: number; reverse: boolean; foreperiod_ms: number }[];
   response_window_ms: number;
 }

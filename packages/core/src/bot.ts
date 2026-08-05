@@ -108,9 +108,9 @@ export function botPlay(spec: GameSpec, ability: BotAbility, seed = 42): TrialRe
           out.push(mk(i, { onset_ms: onset, payload: { sector: t.sector, reverse: t.reverse, responded_sector: null } }));
           return;
         }
-        const target = t.reverse ? (t.sector + 3) % 6 : t.sector;
+        const target = t.reverse ? (t.sector + 2) % 4 : t.sector;
         const acc = t.reverse ? ability.accuracy * 0.85 : ability.accuracy;
-        const responded = rng() < acc ? target : (target + 1 + Math.floor(rng() * 5)) % 6;
+        const responded = rng() < acc ? target : (target + 1 + Math.floor(rng() * 3)) % 4;
         out.push(
           mk(i, {
             onset_ms: onset,

@@ -21,7 +21,7 @@ import { Results } from "@/components/Results";
 const PRACTICE_COACH: Record<string, string> = {
   flash_point: "Tap or press Space the instant the disc appears.",
   reflex_drop: "One rod drops — press its key (S D F · J K L) or tap it before it clears the line.",
-  vector: "A sector glows — press its direction key. Coral core = go opposite.",
+  vector: "A sector glows — press that arrow key. Coral core = press the opposite arrow.",
   stackwise: "Match if this tile equals the one N steps back. J = match, F = no match.",
   drift_watch: "Track the amber orbs through the drift, then pick them out.",
   wide_angle: "One glance: the center symbol and the lime blip's direction.",

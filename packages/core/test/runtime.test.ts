@@ -5,8 +5,9 @@
 import { describe, expect, it } from "vitest";
 import { flashPoint } from "../src/games/flashPoint";
 import { reflexDrop } from "../src/games/reflexDrop";
+import { vector } from "../src/games/vector";
 import { QueueInput } from "../src/input";
-import type { FlashPointSpec, GameContext, ReflexDropSpec } from "../src";
+import type { FlashPointSpec, GameContext, ReflexDropSpec, VectorSpec } from "../src";
 
 /** Virtual frame clock: rAF fires every 16.67 ms of virtual time. */
 class VirtualClock {
@@ -177,6 +178,77 @@ describe("flashPoint runtime", () => {
     expect(trials[0]!.response_ms).toBeNull();
     expect(trials[0]!.correct).toBe(false);
     expect(trials[0]!.false_start).toBe(false);
+  });
+});
+
+describe("vector runtime", () => {
+  // Sectors are clockwise from up: 0 = ↑, 1 = →, 2 = ↓, 3 = ←.
+  const KEY = ["arrowup", "arrowright", "arrowdown", "arrowleft"];
+
+  const oneTrial = (sector: number, reverse: boolean): VectorSpec => ({
+    game: "vector",
+    trials: [{ sector, reverse, foreperiod_ms: 1200 }],
+    response_window_ms: 1500,
+  });
+
+  async function playOne(spec: VectorSpec, key: string) {
+    const clock = new VirtualClock();
+    const input = new QueueInput(clock);
+    const ctx = makeCtx(clock, input);
+    const run = vector.run(spec, ctx);
+    let injected = false;
+    await clock.pump(9000, (t) => {
+      if (!injected && t >= 16.6667 + 1200 + 250) {
+        input.inject({ kind: "key", t, key });
+        injected = true;
+      }
+    });
+    return (await run)[0]!;
+  }
+
+  it("accepts the arrow key matching the lit sector", async () => {
+    for (let s = 0; s < 4; s++) {
+      const tr = await playOne(oneTrial(s, false), KEY[s]!);
+      expect(tr.correct).toBe(true);
+      expect(tr.payload).toEqual({ sector: s, reverse: false, responded_sector: s });
+    }
+  });
+
+  it("on a reverse trial the answer is the sector across the ring", async () => {
+    for (let s = 0; s < 4; s++) {
+      const away = (s + 2) % 4;
+      const right = await playOne(oneTrial(s, true), KEY[away]!);
+      expect(right.correct).toBe(true);
+      expect(right.payload).toEqual({ sector: s, reverse: true, responded_sector: away });
+
+      // pressing the lit direction is exactly the error the game tests for
+      const wrong = await playOne(oneTrial(s, true), KEY[s]!);
+      expect(wrong.correct).toBe(false);
+      expect(wrong.response_ms).not.toBeNull();
+    }
+  });
+
+  it("ignores the old six-sector letter keys", async () => {
+    const tr = await playOne(oneTrial(0, false), "w");
+    expect(tr.response_ms).toBeNull();
+    expect(tr.payload).toEqual({ sector: 0, reverse: false, responded_sector: null });
+  });
+
+  it("resolves a tap to the sector it points at", async () => {
+    const clock = new VirtualClock();
+    const input = new QueueInput(clock);
+    const ctx = makeCtx(clock, input);
+    const run = vector.run(oneTrial(1, false), ctx); // 1 = right
+    let injected = false;
+    await clock.pump(9000, (t) => {
+      if (!injected && t >= 16.6667 + 1200 + 200) {
+        input.inject({ kind: "pointer", t, x: 400, y: 210 }); // right of centre (210,210)
+        injected = true;
+      }
+    });
+    const tr = (await run)[0]!;
+    expect(tr.correct).toBe(true);
+    expect(tr.payload).toEqual({ sector: 1, reverse: false, responded_sector: 1 });
   });
 });
 

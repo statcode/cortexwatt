@@ -49,7 +49,7 @@ export const GAME_META: Record<
     name: "Vector",
     domain: "decision_control",
     tagline: "A sector glows — respond in its direction. If the core ignites, go opposite.",
-    keys: "W E D S A Q — six directions",
+    keys: "↑ ↓ ← → — arrow keys",
   },
   stackwise: {
     name: "Stackwise",

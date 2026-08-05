@@ -51,6 +51,9 @@ def test_difficulty_parameter_mapping():
     v100 = generate("vector", 1, 100)
     assert v100["response_window_ms"] == 700
     assert sum(t["reverse"] for t in v100["trials"]) == round(24 * 0.30)
+    # four sectors, one per arrow key
+    assert all(0 <= t["sector"] <= 3 for t in v100["trials"])
+    assert {t["sector"] for t in generate("vector", 7, 50)["trials"]} == {0, 1, 2, 3}
 
     sw = generate("stackwise", 1, 60)
     assert sw["n"] == 3

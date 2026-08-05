@@ -96,7 +96,9 @@ def generate(game_id: str, seed: int, difficulty: int) -> Spec:
             "game": "vector",
             "trials": [
                 {
-                    "sector": rng.randint(0, 5),
+                    # sector 0–3, clockwise from up: 0 = up, 1 = right,
+                    # 2 = down, 3 = left — one per arrow key.
+                    "sector": rng.randint(0, 3),
                     "reverse": rev,
                     "foreperiod_ms": _foreperiod(rng),
                 }

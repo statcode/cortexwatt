@@ -62,7 +62,7 @@ make test
 |---|---|---|
 | Flash Point | Processing speed | Simple RT — lime disc after an unpredictable foreperiod |
 | Reflex Drop | Processing speed | Six-choice RT — catch the released rod before it clears the line |
-| Vector | Decision & control | 6-sector choice RT; ignited core = respond opposite |
+| Vector | Decision & control | 4-way choice RT on the arrow keys; ignited core = respond opposite |
 | Stackwise | Working memory | Spatial n-back on a 3×3 grid, adaptive N |
 | Drift Watch | Attention | Multi-object tracking, seeded reproducible physics |
 | Wide Angle | Visual | Center symbol + peripheral blip, two-part response |

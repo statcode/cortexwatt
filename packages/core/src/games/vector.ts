@@ -1,6 +1,12 @@
 /** Vector — decision_control. Choice RT + inhibition (PRD §6.2).
- * A hairline compass ring of six sectors; one glows — respond in its
- * direction. When the core hexagon ignites, respond in the OPPOSITE direction. */
+ * A hairline compass ring of four sectors — up, right, down, left, one per
+ * arrow key; one glows — respond in its direction. When the core ignites,
+ * respond in the OPPOSITE direction.
+ *
+ * Diverges from PRD §6.2, which specifies six sectors on Q/W/E/A/S/D: four
+ * cardinal directions map onto keys every player already knows, so the
+ * stimulus→key translation stops being part of what's measured. Response
+ * windows and the reverse-trial proportion are unchanged from the spec. */
 
 import type { GameContext, GameModule, TrialResult, VectorSpec } from "../types";
 import {
@@ -15,9 +21,21 @@ import {
   waitMs,
 } from "./common";
 
-// Sector k centered at bearing k·60° from up, clockwise.
-// Keys hex-wise: W=0 (up), E=1 (NE), D=2 (SE), S=3 (down), A=4 (SW), Q=5 (NW).
-const KEY_TO_SECTOR: Record<string, number> = { w: 0, e: 1, d: 2, s: 3, a: 4, q: 5 };
+/** Sectors, and the arc each one spans. */
+const SECTORS = 4;
+const ARC = 360 / SECTORS;
+
+// Sector k centered at bearing k·90° from up, clockwise, mapped to the arrow
+// keys: 0 = ↑ up, 1 = → right, 2 = ↓ down, 3 = ← left.
+const KEY_TO_SECTOR: Record<string, number> = {
+  arrowup: 0,
+  arrowright: 1,
+  arrowdown: 2,
+  arrowleft: 3,
+};
+
+/** The reverse-trial answer — the sector directly across the ring. */
+const opposite = (sector: number) => (sector + SECTORS / 2) % SECTORS;
 
 function sectorOfPoint(cx: number, cy: number, x: number, y: number): number | null {
   const dx = x - cx;
@@ -25,7 +43,7 @@ function sectorOfPoint(cx: number, cy: number, x: number, y: number): number | n
   if (Math.hypot(dx, dy) < 1e-6) return null;
   // bearing from up, clockwise, degrees
   const deg = ((Math.atan2(dx, -dy) * 180) / Math.PI + 360) % 360;
-  return Math.round(deg / 60) % 6;
+  return Math.round(deg / ARC) % SECTORS;
 }
 
 export const vector: GameModule<VectorSpec> = {
@@ -49,23 +67,23 @@ export const vector: GameModule<VectorSpec> = {
     function drawRing(glowSector: number | null, coreIgnited: boolean) {
       clearField(s);
       const { c, cx, cy, u } = s;
-      for (let k = 0; k < 6; k++) {
-        const a0 = ((k * 60 - 30 + GAP / 2 - 90) * Math.PI) / 180;
-        const a1 = ((k * 60 + 30 - GAP / 2 - 90) * Math.PI) / 180;
+      for (let k = 0; k < SECTORS; k++) {
+        const a0 = ((k * ARC - ARC / 2 + GAP / 2 - 90) * Math.PI) / 180;
+        const a1 = ((k * ARC + ARC / 2 - GAP / 2 - 90) * Math.PI) / 180;
         c.strokeStyle = k === glowSector ? FOCUS.lime : FOCUS.dim;
         c.lineWidth = k === glowSector ? 5 * u : Math.max(1, 1.5 * u);
         c.beginPath();
         c.arc(cx, cy, R, a0, a1);
         c.stroke();
       }
-      // core hexagon
+      // core — one vertex per direction, so it reads as the same compass
       c.strokeStyle = coreIgnited ? FOCUS.coral : FOCUS.dimmer;
       c.fillStyle = coreIgnited ? FOCUS.coral : "transparent";
       c.lineWidth = Math.max(1, 1.5 * u);
       const hr = 16 * u;
       c.beginPath();
-      for (let k = 0; k < 6; k++) {
-        const a = ((k * 60 - 90) * Math.PI) / 180;
+      for (let k = 0; k < SECTORS; k++) {
+        const a = ((k * ARC - 90) * Math.PI) / 180;
         const px = cx + hr * Math.cos(a);
         const py = cy + hr * Math.sin(a);
         k === 0 ? c.moveTo(px, py) : c.lineTo(px, py);
@@ -126,7 +144,7 @@ export const vector: GameModule<VectorSpec> = {
         }
       }
 
-      const target = trial.reverse ? (trial.sector + 3) % 6 : trial.sector;
+      const target = trial.reverse ? opposite(trial.sector) : trial.sector;
       const correct = responded !== null && responded === target;
       record({
         trial_index: i,
