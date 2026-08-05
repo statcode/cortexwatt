@@ -14,7 +14,6 @@ import {
   clearField,
   clocksOf,
   flashFalseStart,
-  microFeedback,
   paintFrame,
   runForeperiod,
   stage,
@@ -36,6 +35,9 @@ const KEY_TO_SECTOR: Record<string, number> = {
 
 /** The reverse-trial answer — the sector directly across the ring. */
 const opposite = (sector: number) => (sector + SECTORS / 2) % SECTORS;
+
+/** Dash pattern (in stage units) for the error halo — see the verdict paint. */
+const ERROR_DASH = [6, 6];
 
 function sectorOfPoint(cx: number, cy: number, x: number, y: number): number | null {
   const dx = x - cx;
@@ -64,14 +66,20 @@ export const vector: GameModule<VectorSpec> = {
     const R = s.r * 0.9;
     const GAP = 4; // degrees between sectors
 
-    function drawRing(glowSector: number | null, coreIgnited: boolean) {
+    function drawRing(
+      glowSector: number | null,
+      coreIgnited: boolean,
+      errorSector: number | null = null,
+    ) {
       clearField(s);
       const { c, cx, cy, u } = s;
       for (let k = 0; k < SECTORS; k++) {
         const a0 = ((k * ARC - ARC / 2 + GAP / 2 - 90) * Math.PI) / 180;
         const a1 = ((k * ARC + ARC / 2 - GAP / 2 - 90) * Math.PI) / 180;
-        c.strokeStyle = k === glowSector ? FOCUS.lime : FOCUS.dim;
-        c.lineWidth = k === glowSector ? 5 * u : Math.max(1, 1.5 * u);
+        const lit = k === glowSector;
+        const wrong = k === errorSector;
+        c.strokeStyle = wrong ? FOCUS.coral : lit ? FOCUS.lime : FOCUS.dim;
+        c.lineWidth = wrong || lit ? 5 * u : Math.max(1, 1.5 * u);
         c.beginPath();
         c.arc(cx, cy, R, a0, a1);
         c.stroke();
@@ -156,8 +164,27 @@ export const vector: GameModule<VectorSpec> = {
         payload: { sector: trial.sector, reverse: trial.reverse, responded_sector: responded },
       });
 
-      if (responded !== null) await microFeedback(ctx, s, correct, drawWaiting);
-      else await paintFrame(clocks, drawWaiting);
+      // Verdict: a lime halo for a hit, a coral one for any miss — a wrong
+      // arrow, or no answer at all. The sector actually pressed lights coral so
+      // the signal carries position as well as colour (never colour alone), and
+      // the halo is dashed on an error: coral already means "reverse trial" at
+      // the core, and an instruction shown at onset must not look like a verdict
+      // shown after the response.
+      await paintFrame(clocks, () => {
+        drawRing(correct ? target : null, false, correct ? null : responded);
+        const { c, cx, cy, u } = s;
+        c.strokeStyle = correct ? FOCUS.lime : FOCUS.coral;
+        c.globalAlpha = 0.6;
+        c.lineWidth = Math.max(1, 1.4 * u);
+        if (!correct) c.setLineDash(ERROR_DASH.map((d) => d * u));
+        c.beginPath();
+        c.arc(cx, cy, s.r * 0.99, 0, Math.PI * 2);
+        c.stroke();
+        c.setLineDash([]);
+        c.globalAlpha = 1;
+      });
+      await waitMs(clocks, ctx.reducedMotion ? 60 : 140, ctx.abortSignal);
+      await paintFrame(clocks, drawWaiting);
       await waitMs(clocks, 800, ctx.abortSignal); // ISI
     }
 
