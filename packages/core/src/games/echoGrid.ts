@@ -3,7 +3,7 @@
  * rebuilds the pattern by tapping cells, with undo, then Confirm. */
 
 import type { EchoGridSpec, GameContext, GameModule, TrialResult } from "../types";
-import { FOCUS, clearField, clocksOf, paintFrame, stage, waitUntil } from "./common";
+import { FOCUS, clearField, clocksOf, drawVerdict, paintFrame, stage, waitUntil } from "./common";
 
 export const echoGrid: GameModule<EchoGridSpec> = {
   id: "echo_grid",
@@ -160,8 +160,15 @@ export const echoGrid: GameModule<EchoGridSpec> = {
         },
       });
 
-      // brief reveal of the true pattern
-      await paintFrame(clocks, () => drawGrid({ lit: targetSet }));
+      // Brief reveal of the true pattern, with the verdict laid over it. This
+      // game is scored on overlap, not all-or-nothing, so the reveal is what
+      // actually tells you how you did — the mark only says whether it counted
+      // as a hit, and costs no extra time.
+      const perfect = nCorrect === trial.cells.length && nExtra === 0;
+      await paintFrame(clocks, () => {
+        drawGrid({ lit: targetSet });
+        drawVerdict(s, perfect);
+      });
       await waitUntil(clocks, clocks.now() + (ctx.reducedMotion ? 350 : 650), ctx.abortSignal);
       ctx.controls.clear();
     }

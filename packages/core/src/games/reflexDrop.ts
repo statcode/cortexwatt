@@ -23,6 +23,7 @@ import {
   paintFrame,
   runForeperiod,
   stage,
+  verdict,
   waitMs,
 } from "./common";
 
@@ -237,41 +238,14 @@ export const reflexDrop: GameModule<ReflexDropSpec> = {
         payload: { rod: trial.rod, responded_rod: responded },
       });
 
-      if (responded !== null) {
-        // Freeze the rod where it was caught — the drop distance is the RT.
-        const held = fallAt(responseT! - onset);
-        const frozen = () => draw(trial.rod, held, responded);
-        await paintFrame(clocks, frozen);
-        // Not the shared microFeedback(): its glow is a ring around the stage
-        // centre, which suits the centre-focused games but reads as an unrelated
-        // circle over a rack that spans the field. Same semantics and timings —
-        // hairline glow vs brief dim, ≤150 ms, never a red X slap.
-        await paintFrame(clocks, () => {
-          frozen();
-          if (correct) {
-            s.c.strokeStyle = FOCUS.lime;
-            s.c.globalAlpha = 0.5;
-            s.c.lineWidth = Math.max(1, 1.2 * s.u);
-            s.c.beginPath();
-            s.c.roundRect(
-              rack.x[trial.rod]! - rack.rodW / 2 - 5 * s.u,
-              rack.railY + held - 5 * s.u,
-              rack.rodW + 10 * s.u,
-              rack.rodH + 10 * s.u,
-              rack.rodW / 2 + 5 * s.u,
-            );
-            s.c.stroke();
-            s.c.globalAlpha = 1;
-          } else {
-            s.c.fillStyle = "rgba(14,21,19,0.45)";
-            s.c.fillRect(0, 0, s.w, s.h);
-          }
-        });
-        await waitMs(clocks, ctx.reducedMotion ? 60 : 130, ctx.abortSignal);
-        await paintFrame(clocks, frozen);
-      } else {
-        await paintFrame(clocks, () => draw(trial.rod, rack.fall, null));
-      }
+      // Freeze the rod where it was caught — the drop distance is the RT. On a
+      // miss it sits at the catch line, which is where it ran out of runway.
+      // The rod grabbed by mistake is already outlined coral by draw(), so the
+      // verdict carries position as well as colour.
+      const held = responded === null ? rack.fall : fallAt(responseT! - onset);
+      const frozen = () => draw(trial.rod, held, responded);
+      await paintFrame(clocks, frozen);
+      await verdict(ctx, s, correct, frozen);
       await paintFrame(clocks, drawWaiting);
       await waitMs(clocks, 350, ctx.abortSignal);
     }

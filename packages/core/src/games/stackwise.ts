@@ -4,7 +4,7 @@
  * trial_index is the presentation index. */
 
 import type { GameContext, GameModule, StackwiseSpec, TrialResult } from "../types";
-import { FOCUS, clearField, clocksOf, paintFrame, stage, waitUntil } from "./common";
+import { FOCUS, clearField, clocksOf, paintFrame, stage, verdict, waitUntil } from "./common";
 
 const LIT_MS = 500;
 
@@ -91,6 +91,14 @@ export const stackwise: GameModule<StackwiseSpec> = {
           if (r !== null && isMatch !== null) {
             responded = r;
             responseT = ev.t;
+            // Verdict runs *inside* the ISI, never after it: this is a capacity
+            // game on a fixed schedule, and the waitUntil(windowEnd) below has
+            // to stay the thing that decides when the next tile lights. The
+            // redraw re-checks the lit phase each paint, so it self-corrects if
+            // the 500 ms lit window closes mid-hold.
+            await verdict(ctx, s, r === isMatch, () =>
+              drawGrid(clocks.now() < onset + LIT_MS ? cell : null),
+            );
           }
           continue;
         }

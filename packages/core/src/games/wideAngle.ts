@@ -14,6 +14,7 @@ import {
   paintFrame,
   runForeperiod,
   stage,
+  verdict,
   waitUntil,
 } from "./common";
 
@@ -201,7 +202,9 @@ export const wideAngle: GameModule<WideAngleSpec> = {
         payload: { center_ok: centerOk, bearing_ok: bearingOk, chosen_arc: chosenArc },
       });
 
-      await paintFrame(clocks, () => drawRing(null, chosenArc));
+      // Both parts have to be right for the trial to count, so the verdict is a
+      // genuine binary here. The chosen arc stays marked underneath it.
+      await verdict(ctx, s, centerOk && bearingOk, () => drawRing(null, chosenArc));
     }
 
     ctx.onTrialProgress(n, n);

@@ -6,8 +6,15 @@ import { describe, expect, it } from "vitest";
 import { flashPoint } from "../src/games/flashPoint";
 import { reflexDrop } from "../src/games/reflexDrop";
 import { vector } from "../src/games/vector";
+import { stackwise } from "../src/games/stackwise";
 import { QueueInput } from "../src/input";
-import type { FlashPointSpec, GameContext, ReflexDropSpec, VectorSpec } from "../src";
+import type {
+  FlashPointSpec,
+  GameContext,
+  ReflexDropSpec,
+  StackwiseSpec,
+  VectorSpec,
+} from "../src";
 
 /** Virtual frame clock: rAF fires every 16.67 ms of virtual time. */
 class VirtualClock {
@@ -249,6 +256,55 @@ describe("vector runtime", () => {
     const tr = (await run)[0]!;
     expect(tr.correct).toBe(true);
     expect(tr.payload).toEqual({ sector: 1, reverse: false, responded_sector: 1 });
+  });
+});
+
+describe("stackwise schedule integrity", () => {
+  // The verdict mark paints inside the ISI. This is a capacity game on a fixed
+  // presentation rate, so answering must not shift when the next tile lights.
+  const LIT_MS = 500;
+
+  async function run(respond: boolean) {
+    const clock = new VirtualClock();
+    const input = new QueueInput(clock);
+    const ctx = makeCtx(clock, input);
+    const spec: StackwiseSpec = {
+      game: "stackwise",
+      n: 1,
+      presentations: [0, 4, 4, 2, 7, 7].map((cell) => ({ cell })),
+      isi_ms: 1200,
+    };
+    const run = stackwise.run(spec, ctx);
+    let last = -1e9;
+    await clock.pump(20000, (t) => {
+      // answer ~200 ms into each presentation, at most once per cycle
+      if (respond && t - last > 900) {
+        last = t;
+        input.inject({ kind: "key", t, key: "j" });
+      }
+    });
+    return await run;
+  }
+
+  const gapsOf = (trials: { onset_ms: number }[]) =>
+    trials.slice(1).map((t, i) => t.onset_ms - trials[i]!.onset_ms);
+
+  it("keeps a fixed presentation rate whether or not the player answers", async () => {
+    const silent = await run(false);
+    const answered = await run(true);
+    expect(silent.length).toBe(5); // 6 presentations − n
+    expect(answered.length).toBe(5);
+
+    // The rate must not depend on whether a verdict was painted. Absolute gaps
+    // sit a couple of frames above LIT_MS + isi_ms because onsets are
+    // rAF-quantized and each cycle repaints; what matters is that the two runs
+    // agree and that neither drifts.
+    const a = gapsOf(silent);
+    const b = gapsOf(answered);
+    expect(Math.max(...a) - Math.min(...a)).toBeLessThan(17); // no drift
+    a.forEach((gap, i) => expect(Math.abs(gap - b[i]!)).toBeLessThan(17));
+    expect(a[0]!).toBeGreaterThanOrEqual(LIT_MS + 1200);
+    expect(a[0]!).toBeLessThan(LIT_MS + 1200 + 3 * 16.7);
   });
 });
 

@@ -12,6 +12,7 @@ import {
   paintFrame,
   runForeperiod,
   stage,
+  verdict,
   waitMs,
 } from "./common";
 
@@ -82,6 +83,11 @@ export const flashPoint: GameModule<FlashPointSpec> = {
         payload: {},
       });
 
+      // A hit needs no confirmation — PRD §6.1 keeps this game pure, and a mark
+      // after every trial would just add anticipation to a simple-RT task. A
+      // timeout does: it is the one error here that otherwise passed silently.
+      // (A false start already has its own coral ring, above.)
+      if (ev === null) await verdict(ctx, s, false, drawWaiting);
       await paintFrame(clocks, drawWaiting);
       await waitMs(clocks, 350, ctx.abortSignal);
     }

@@ -5,7 +5,7 @@
 
 import type { DriftWatchSpec, GameContext, GameModule, TrialResult } from "../types";
 import { mulberry32 } from "../prng";
-import { FOCUS, clearField, clocksOf, paintFrame, stage, waitMs } from "./common";
+import { FOCUS, clearField, clocksOf, drawVerdict, paintFrame, stage, waitMs } from "./common";
 
 const PHYSICS_HZ = 120;
 const PAD = 0.06; // normalized wall padding
@@ -221,8 +221,15 @@ export const driftWatch: GameModule<DriftWatchSpec> = {
         payload: { selected_ids: selectedIds, target_ids: rSpec.target_ids, n_correct: nCorrect },
       });
 
-      // reveal: show true targets briefly
-      await paintFrame(clocks, () => drawOrbs(orbs, { highlight: targets, selected }));
+      // Reveal the true targets, with the verdict over it. Rounds are scored on
+      // the fraction of targets recovered, so the reveal — which shows exactly
+      // which orbs were missed — is the real feedback; the mark only says
+      // whether the round counted as clean. Costs no extra time.
+      const clean = nCorrect === targets.size && selected.size === targets.size;
+      await paintFrame(clocks, () => {
+        drawOrbs(orbs, { highlight: targets, selected });
+        drawVerdict(s, clean);
+      });
       await waitMs(clocks, ctx.reducedMotion ? 400 : 700, ctx.abortSignal);
     }
 

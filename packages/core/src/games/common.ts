@@ -80,8 +80,52 @@ export async function runForeperiod(
   return { falseStart: ev, scheduledOnset };
 }
 
-/** Correct/incorrect micro-feedback: hairline glow vs brief dim (≤150 ms). */
-export async function microFeedback(
+/** How long a verdict holds — the design doc caps micro-states at 150 ms. */
+export const VERDICT_MS = 140;
+const ERROR_DASH = [6, 6];
+
+/**
+ * The shared verdict mark: a lime halo for a hit, a coral halo plus a coral X
+ * for a miss. Draws onto the frame the caller has already composed — it never
+ * clears — so games that already reveal the answer (Echo Grid's pattern, Drift
+ * Watch's targets) can overlay it without spending extra time.
+ *
+ * The error halo is dashed and the hit halo solid, so the two never depend on
+ * red-versus-green discrimination alone (design doc, Accessibility in Focus
+ * Mode). Games that know *which* element was wrong should also mark it in
+ * coral, so the verdict carries position as well as colour.
+ */
+export function drawVerdict(s: Stage, ok: boolean): void {
+  const { c, cx, cy, u, r } = s;
+  c.strokeStyle = ok ? FOCUS.lime : FOCUS.coral;
+  c.globalAlpha = ok ? 0.5 : 0.6;
+  c.lineWidth = Math.max(1, 1.3 * u);
+  if (!ok) c.setLineDash(ERROR_DASH.map((d) => d * u));
+  c.beginPath();
+  c.arc(cx, cy, r * 0.99, 0, Math.PI * 2);
+  c.stroke();
+  c.setLineDash([]);
+
+  if (!ok) {
+    // A small X at fixation — unmistakable, but hairline and gone in 140 ms,
+    // so it reads as a mark rather than a punishment.
+    const a = 13 * u;
+    c.globalAlpha = 0.9;
+    c.lineWidth = Math.max(1, 2.2 * u);
+    c.lineCap = "round";
+    c.beginPath();
+    c.moveTo(cx - a, cy - a);
+    c.lineTo(cx + a, cy + a);
+    c.moveTo(cx + a, cy - a);
+    c.lineTo(cx - a, cy + a);
+    c.stroke();
+    c.lineCap = "butt";
+  }
+  c.globalAlpha = 1;
+}
+
+/** Paint a verdict over `redraw`, hold it, then restore `redraw`. */
+export async function verdict(
   ctx: GameContext,
   s: Stage,
   ok: boolean,
@@ -90,20 +134,9 @@ export async function microFeedback(
   const clocks = clocksOf(ctx);
   await paintFrame(clocks, () => {
     redraw();
-    if (ok) {
-      s.c.strokeStyle = FOCUS.lime;
-      s.c.globalAlpha = 0.5;
-      s.c.lineWidth = Math.max(1, 1.2 * s.u);
-      s.c.beginPath();
-      s.c.arc(s.cx, s.cy, s.r * 0.96, 0, Math.PI * 2);
-      s.c.stroke();
-      s.c.globalAlpha = 1;
-    } else {
-      s.c.fillStyle = "rgba(14,21,19,0.45)"; // brief dim — never a red X slap
-      s.c.fillRect(0, 0, s.w, s.h);
-    }
+    drawVerdict(s, ok);
   });
-  await waitMs(clocks, ctx.reducedMotion ? 60 : 130, ctx.abortSignal);
+  await waitMs(clocks, ctx.reducedMotion ? 60 : VERDICT_MS, ctx.abortSignal);
   await paintFrame(clocks, redraw);
 }
 
